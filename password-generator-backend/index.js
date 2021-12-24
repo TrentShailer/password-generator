@@ -1,12 +1,13 @@
 const fs = require("fs");
 const path = require("path");
-const http = require("https");
+const http = require("http");
 
-let express = require("express");
+const express = require("express");
 let app = express();
 
 let httpServer = http.createServer(app);
 
+app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "/build")));
 
 app.set("trust proxy", 1);
@@ -16,6 +17,7 @@ app.get("/", (req, res) => {
 });
 
 app.get("*", (req, res) => {
+	console.log(req.path);
 	res.redirect("/");
 });
 
