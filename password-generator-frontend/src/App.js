@@ -1,52 +1,23 @@
 import "./App.css";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Container from "@mui/material/Container";
-import { Button, Divider, Grid, Paper, Card, Slider, Typography } from "@mui/material";
-
-import adjectives from "./static/adjectives.js";
-import nouns from "./static/nouns.js";
-import verbs from "./static/verbs.js";
-
-function GeneratePassword(numberOfWords, characterLimit) {
-	let password = "";
-
-	for (let i = 0; i < numberOfWords - 1; i++) {
-		let wordIndex = Math.floor(Math.random() * adjectives.length);
-		password += `${adjectives[wordIndex]} `;
-	}
-
-	let finalType = Math.floor(Math.random() * 2);
-
-	if (finalType === 1) {
-		let wordIndex = Math.floor(Math.random() * nouns.length);
-		password += nouns[wordIndex];
-	} else {
-		let wordIndex = Math.floor(Math.random() * verbs.length);
-		password += verbs[wordIndex];
-	}
-
-	if (password.length > characterLimit && characterLimit > 9) {
-		password = GeneratePassword(numberOfWords, characterLimit);
-	}
-
-	return password;
-}
+import { Button, Divider, Grid, Card, Slider, Typography } from "@mui/material";
+import axios from "axios";
 
 function App() {
 	const [passwords, setPasswords] = useState([]);
-	const [characterLimit, setCharacterLimit] = useState(50);
-	const [wordCount, setWordCount] = useState(2);
+	const [charLimit, setCharLimit] = useState([16, 32]);
 	const [passwordCount, setPasswordCount] = useState(3);
 
-	const changeCharLimit = (event, newValue) => {
-		if (typeof newValue === "number") {
-			setCharacterLimit(newValue);
+	const changeCharLimit = (event, newValue, activeThumb) => {
+		if (!Array.isArray(newValue)) {
+			return;
 		}
-	};
 
-	const changeWordCount = (event, newValue) => {
-		if (typeof newValue === "number") {
-			setWordCount(newValue);
+		if (activeThumb === 0) {
+			setCharLimit([Math.min(newValue[0], charLimit[1] - 4), charLimit[1]]);
+		} else {
+			setCharLimit([charLimit[0], Math.max(newValue[1], charLimit[0] + 4)]);
 		}
 	};
 
@@ -57,11 +28,19 @@ function App() {
 	};
 
 	const generatePasswords = () => {
-		let newPasswords = [];
-		for (let i = 0; i < passwordCount; i++) {
-			newPasswords.push(GeneratePassword(wordCount, characterLimit));
-		}
-		setPasswords(newPasswords);
+		axios
+			.get(`/generate/${passwordCount}/${charLimit}`)
+			.then((result) => {
+				if (result.data.success) {
+					setPasswords(result.data.passwords);
+				} else {
+					console.log("Failed");
+				}
+			})
+			.catch((error) => {
+				console.log("Error");
+				console.error(error);
+			});
 	};
 
 	return (
@@ -76,36 +55,21 @@ function App() {
 					<Grid item>
 						<Typography variant="h2">Password Generator</Typography>
 					</Grid>
-
-					<Grid item>
-						<Typography variant="subtitle2">Word Count</Typography>
-						<Slider
-							defaultValue={2}
-							step={1}
-							min={2}
-							max={5}
-							marks={[
-								{ value: 2, label: "2" },
-								{ value: 5, label: "5" },
-							]}
-							onChange={changeWordCount}
-							valueLabelDisplay="auto"
-						/>
-					</Grid>
 					<Grid item>
 						<Typography variant="subtitle2">Character Limit</Typography>
 						<Slider
-							defaultValue={50}
+							value={charLimit}
 							step={1}
 							min={10}
-							max={50}
-							scale={(value) => (value === 50 ? Infinity : value)}
+							max={32}
+							scale={(value) => (value === 32 ? Infinity : value)}
 							marks={[
 								{ value: 10, label: "10" },
-								{ value: 50, label: "No Limit" },
+								{ value: 32, label: "No Limit" },
 							]}
 							onChange={changeCharLimit}
 							valueLabelDisplay="auto"
+							disableSwap
 						/>
 					</Grid>
 					<Grid item>
@@ -141,7 +105,10 @@ function App() {
 						</Button>
 					</Grid>
 					<Grid item>
-						<Card scrollable style={{ padding: 25, marginBottom: 25 }} elevation={5}>
+						<Card
+							scrollable={"scroll"}
+							style={{ padding: 25, marginBottom: 25 }}
+							elevation={5}>
 							<Grid container direction="column" justifyContent="center" spacing="5">
 								{passwords.map((password) => (
 									<Grid item key={password}>
