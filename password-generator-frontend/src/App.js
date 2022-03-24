@@ -60,11 +60,11 @@ function App() {
 						<Slider
 							value={charLimit}
 							step={1}
-							min={10}
+							min={16}
 							max={32}
 							scale={(value) => (value === 32 ? Infinity : value)}
 							marks={[
-								{ value: 10, label: "10" },
+								{ value: 16, label: "16" },
 								{ value: 32, label: "No Limit" },
 							]}
 							onChange={changeCharLimit}
